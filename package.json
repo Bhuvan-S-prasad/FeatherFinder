@@ -7,7 +7,10 @@
     "dev": "concurrently \"vite\" \"python server/app.py\"",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "install-flask": "pip install -r server/requirements.txt",
+    "start-flask": "python server/app.py",
+    "start-vite": "vite"
   },
   "dependencies": {
     "@react-spring/web": "^9.7.3",

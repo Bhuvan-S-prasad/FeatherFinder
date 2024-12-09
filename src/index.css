@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-image: url('https://images.unsplash.com/photo-1516117172878-fd2c41f4a759?auto=format&fit=crop&q=80');
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: transform 0.3s ease-in-out;
+}
+
+.glass-morphism:hover {
+  transform: translateY(-5px);
+}
+
+@media (max-width: 768px) {
+  .glass-morphism {
+    margin: 1rem;
+    padding: 1rem;
+  }
+  
+  .container {
+    padding: 0.5rem;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

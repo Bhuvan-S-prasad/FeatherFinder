@@ -80,6 +80,11 @@ transform = transforms.Compose([
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/static/uploads/<filename>')
+def serve_upload(filename):
+    """Serve uploaded files."""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.route('/predict', methods=['POST'])
 def predict():
     """Handle image upload and return the prediction."""
@@ -136,4 +141,4 @@ if __name__ == '__main__':
         print(f"Warning: {model_error}")
         print("The application will start, but predictions won't work until the model is properly loaded.")
     
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=True, port=5000)

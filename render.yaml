@@ -1,7 +1,9 @@
 services:
   - type: web
-    name: bird-classification
+    name: bird-vision-ai
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app"
-    
+    buildCommand: pip install -r requirements.txt && npm install && npm run build
+    startCommand: python server/app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0

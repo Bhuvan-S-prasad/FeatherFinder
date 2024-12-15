@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import torch
 from torchvision import transforms, models
 from PIL import Image
+from flask import send_from_directory
 
 # Flask setup
 app = Flask(__name__)
@@ -141,4 +142,5 @@ if __name__ == '__main__':
         print(f"Warning: {model_error}")
         print("The application will start, but predictions won't work until the model is properly loaded.")
     
-    app.run(port=5000)
+    port = int(os.environ.get('PORT', 5000))  # Use the PORT environment variable or default to 5000
+    app.run(host='0.0.0.0', port=port)

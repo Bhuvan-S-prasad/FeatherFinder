@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "install-flask": "pip install -r server/requirements.txt",
     "start-flask": "python server/app.py",
-    "start-vite": "vite"
+    "start-vite": "vite",
+    "start": "gunicorn app:app --bind 0.0.0.0:$PORT"
+
   },
   "dependencies": {
     "@react-spring/web": "^9.7.3",

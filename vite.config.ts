@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  build: {
+    outDir: '../server/static', // Ensure the backend serves the frontend
+    emptyOutDir: true,
+  },
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],

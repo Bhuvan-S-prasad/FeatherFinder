@@ -3,7 +3,7 @@ import { Info } from 'lucide-react';
 
 const facts = [
   "Birds are the only living dinosaurs.",
-  "A bird's heart beats 400 times per minute while resting.",
+  "A bird's heart beats 400 times per minute while resting. prety cool right?",
   "The Bee Hummingbird is the smallest bird in the world.",
   "Eagles can see up to 3 kilometers away.",
   "Ostriches can run faster than horses.",

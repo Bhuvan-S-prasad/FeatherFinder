@@ -1,14 +1,22 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import torch
 from torchvision import transforms, models
 from PIL import Image
-from flask import send_from_directory
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Flask setup
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = './static/uploads'
+app = Flask(__name__, static_folder="static")
+
+# Configuration
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', './static/uploads')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # Device configuration
@@ -51,21 +59,36 @@ class_names = [
     "095.Baltimore_Oriole", "096.Hooded_Oriole", "097.Orchard_Oriole", 
     "098.Scott_Oriole", "099.Ovenbird", "100.Brown_Pelican", "unknown"
 ]
+
 def load_model():
     try:
         model = models.resnet50(weights=None)
         model.fc = torch.nn.Linear(model.fc.in_features, len(class_names))
-        model_path = os.path.join(os.path.dirname(__file__), 'new_bird_model.pth')
         
-        if not os.path.exists(model_path):
-            return None, "Model file 'new_bird_model.pth' not found. Please ensure it's in the server directory."
+        # Look for model in multiple locations
+        possible_model_paths = [
+            os.path.join(os.path.dirname(__file__), 'new_bird_model.pth'),
+            os.path.join(os.getcwd(), 'new_bird_model.pth'),
+            './new_bird_model.pth'
+        ]
+        
+        model_path = None
+        for path in possible_model_paths:
+            if os.path.exists(path):
+                model_path = path
+                break
+                
+        if not model_path:
+            return None, "Model file 'new_bird_model.pth' not found in any of the expected locations."
         
         state_dict = torch.load(model_path, map_location=device)
         model.load_state_dict(state_dict)
         model = model.to(device)
         model.eval()
+        logger.info(f"Model loaded successfully from {model_path}")
         return model, None
     except Exception as e:
+        logger.error(f"Error loading model: {str(e)}")
         return None, f"Error loading model: {str(e)}"
 
 # Load model at startup
@@ -86,10 +109,20 @@ def serve_upload(filename):
     """Serve uploaded files."""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+# Health check endpoint
+@app.route('/health')
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'model_loaded': model is not None
+    })
+
 @app.route('/predict', methods=['POST'])
 def predict():
     """Handle image upload and return the prediction."""
     if model_error:
+        logger.error(f"Model error: {model_error}")
         return jsonify({'error': model_error}), 500
 
     if 'file' not in request.files:
@@ -104,11 +137,17 @@ def predict():
         return jsonify({'error': 'Invalid file type. Allowed types are PNG, JPG, JPEG'}), 400
 
     try:
-        # Save the uploaded file
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        # Create a unique filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        original_filename = secure_filename(file.filename)
+        filename = f"{timestamp}_{original_filename}"
+        
+        # Ensure upload directory exists
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
+        logger.info(f"File saved successfully at {filepath}")
 
         # Process the image
         image = Image.open(filepath).convert('RGB')
@@ -119,19 +158,22 @@ def predict():
             output = model(image_tensor)
             _, predicted = torch.max(output, 1)
 
-        # Get the class name
         predicted_class = class_names[predicted.item()]
-
+        
+        # Get the public URL for the image
+        file_url = f'/static/uploads/{filename}'
+        
+        logger.info(f"Prediction successful: {predicted_class}")
         return jsonify({
             'class': predicted_class,
-            'file_path': f'/static/uploads/{filename}'
+            'file_path': file_url,
+            'confidence': float(torch.nn.functional.softmax(output, dim=1).max())
         }), 200
 
     except Exception as e:
-        error_message = str(e)
-        print(f"Error during prediction: {error_message}")  # Log the error
+        logger.error(f"Error during prediction: {str(e)}")
         return jsonify({
-            'error': f"An error occurred during prediction. Please try again. Details: {error_message}"
+            'error': f"An error occurred during prediction. Please try again. Details: {str(e)}"
         }), 500
 
 if __name__ == '__main__':
@@ -139,8 +181,8 @@ if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
     if model_error:
-        print(f"Warning: {model_error}")
-        print("The application will start, but predictions won't work until the model is properly loaded.")
+        logger.warning(f"Warning: {model_error}")
+        logger.warning("The application will start, but predictions won't work until the model is properly loaded.")
     
-    port = int(os.environ.get('PORT', 5000))  # Use the PORT environment variable or default to 5000
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

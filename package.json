@@ -11,8 +11,8 @@
     "install-flask": "pip install -r server/requirements.txt",
     "start-flask": "python server/app.py",
     "start-vite": "vite",
-    "start": "gunicorn app:app --bind 0.0.0.0:$PORT"
-
+    "start": "netlify dev",
+    "netlify-build": "npm install && cd netlify/functions && npm install && cd ../../ && npm run build"
   },
   "dependencies": {
     "@react-spring/web": "^9.7.3",
